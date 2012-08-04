@@ -10,7 +10,8 @@ function NS:GetMaps()
 	local t = {}
 	
 	for k, v in pairs(file.Find('maps/*.bsp', "GAME")) do
-		table.insert(t, string.gsub(string.lower(v), '.bsp', ''))
+		local map = string.gsub(string.lower(v), '.bsp', '')
+		table.insert(t, map)
 	end
 	
 	return t
@@ -21,5 +22,5 @@ function NS:ChangeMap(map)
 		error('Map doesn\'t exist.', 0)
 	end
 	
-	RunConsoleCommand('changegamemode ' .. map .. ' ' .. GAMEMODE.FolderName)
+	RunConsoleCommand('map', map)
 end

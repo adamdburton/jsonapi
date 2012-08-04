@@ -18,7 +18,15 @@ function NS:GetMethods(namespace)
 	
 	for k, v in pairs(api.Namespaces[namespace]) do
 		if type(v) == 'function' then
-			t[k] = get_args(v)
+			local args = get_args(v)
+			
+			for k, v in pairs(args) do
+				if v == 'self' then
+					table.remove(args, k)
+				end
+			end
+			
+			t[k] = args
 		end
 	end
 	
