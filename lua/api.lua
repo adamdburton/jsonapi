@@ -44,13 +44,20 @@ function api.Call(namespace, method, call_args, plain)
 		return api.Error('Invalid namespace parameter (' .. namespace .. ').', plain)
 	end
 	
-	if not api.Namespaces[namespace][method] then
+	if not api.Namespaces[namespace][method] and not type(api.Namespaces[namespace][method]) == 'function' then
 		return api.Error('Invalid method parameter (' .. method .. ') (' .. namespace .. ').', plain)
 	end
 	
 	local func = api.Namespaces[namespace][method]
 	
 	local function_args = get_args(func)
+	
+	-- remove the self arg, we pass that anyway
+	for k, v in pairs(function_args) do
+		if v == 'self' then
+			table.remove(function_args, k)
+		end
+	end
 	
 	-- Check the arguments table matches up with the function
 	for k, v in pairs(function_args) do
@@ -68,15 +75,11 @@ function api.Call(namespace, method, call_args, plain)
 	
 	local pcall_args = {}
 	
-	-- Add the namespace as the first arg, because namespace functions are metatables but pcall doesn't do calling them (I think)
-	-- TODO: Test this theory
-	table.insert(pcall_args, api.Namespaces[namespace])
-	
 	for _, param in pairs(function_args) do
 		table.insert(pcall_args, call_args[param])
 	end
 	
-	local status, ret = pcall(func, unpack(pcall_args))
+	local status, ret = pcall(func, api.Namespaces[namespace], unpack(pcall_args))
 	
 	if status then
 		-- Run hooks
@@ -200,7 +203,7 @@ function table.ToString(tab)
 	return '{ ' .. string.sub(s, 0, -3) .. ' }'
 end
 
--- Custom json encoding support!
+-- Custom json encoding support! May not be the fastest but who cares, it's for an api.
 function json_encode(data)
 	local function entity_data(ent)
 		return IsValid(ent) and {

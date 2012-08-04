@@ -12,7 +12,7 @@ function NS:GetPlayers()
 	local t = {}
 	
 	for k, v in pairs(player.GetAll()) do
-		local ply = api.Call('core', 'getPlayer', { uniqueid = v:UniqueID() }, true)
+		local ply = api.Call('player', 'GetPlayer', { uniqueid = v:UniqueID() }, true)
 		table.insert(t, ply)
 	end
 	
