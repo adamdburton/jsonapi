@@ -1,26 +1,27 @@
 api = {}
 
-api.namespaces = {}
-api.hooks = {}
+api.Namespaces = {}
+api.Hooks = {}
 
 function api.LoadNamespaces()
 	-- Load namespaces
 	for _, filename in pairs(file.Find("namespaces/*.lua", LUA_PATH)) do
 		NS = {}
 		NS.__index = NS
-		NS.dependencies = {}
+		NS.Name = string.gsub(filename, '.lua', '')
+		NS.Dependencies = {}
 		
 		include("namespaces/" .. filename)
 		
-		api.namespaces[string.gsub(filename, '.lua', '')] = NS
+		api.Namespaces[NS.Name] = NS
 	end
 	
 	-- Check dependencies and remove any namespaces with missing ones.
-	for name, namespace in pairs(api.namespaces) do
+	for name, namespace in pairs(api.Namespaces) do
 		for _, dependency in pairs(namespace.dependencies) do
-			if not api.namespaces[dependency] then
-				api.namespaces[name] = nil
+			if not api.Namespaces[dependency] then
 				RemoveDependentNamespaces(name)
+				api.Namespaces[name] = nil
 			end
 		end
 	end
@@ -38,15 +39,15 @@ function api.Call(namespace, method, call_args, plain)
 		return api.Error('Missing method parameter.', plain)
 	end
 	
-	if not api.namespaces[namespace] then
+	if not api.Namespaces[namespace] then
 		return api.Error('Invalid namespace parameter (' .. namespace .. ').', plain)
 	end
 	
-	if not api.namespaces[namespace][method] then
+	if not api.Namespaces[namespace][method] then
 		return api.Error('Invalid method parameter (' .. method .. ') (' .. namespace .. ').', plain)
 	end
 	
-	local func = api.namespaces[namespace][method]
+	local func = api.Namespaces[namespace][method]
 	
 	local function_args = get_args(func)
 	
@@ -66,6 +67,10 @@ function api.Call(namespace, method, call_args, plain)
 	
 	local pcall_args = {}
 	
+	-- Add the namespace as the first arg, because namespace functions are metatables but pcall doesn't do calling them (I think)
+	-- TODO: Test this theory
+	table.insert(pcall_args, api.Namespaces[namespace])
+	
 	for _, param in pairs(function_args) do
 		table.insert(pcall_args, call_args[param])
 	end
@@ -84,10 +89,10 @@ function api.Call(namespace, method, call_args, plain)
 end
 
 function api.RunHook(hook, data)
-	if not api.hooks[hook] then return data end
+	if not api.Hooks[hook] then return data end
 	
 	-- Run the data through all of the hooks. They can return whatever they like.
-	for k, v in pairs(api.hooks[hook]) do
+	for k, v in pairs(api.Hooks[hook]) do
 		data = v(data)
 	end
 	
@@ -95,11 +100,11 @@ function api.RunHook(hook, data)
 end
 
 function api.RegisterHook(hook, func)
-	if not api.hooks[hook] then
-		api.hooks[hook] = {}
+	if not api.Hooks[hook] then
+		api.Hooks[hook] = {}
 	end
 	
-	table.insert(api.hooks[hook], func)
+	table.insert(api.Hooks[hook], func)
 end
 
 function api.Success(data, plain)
@@ -138,10 +143,12 @@ function get_args(f)
 end
 
 local function RemoveDependentNamespaces(dependent)
+	MsgN('JSONAPI: [info] Removing namespaces dependant on ' .. dependant.name)
+	
 	-- Loop all namespaces and remove any namespace that depends on dependent, which in turn removes anything that depends on it, and so on.
-	for name, namespace in pairs(api.namespaces) do
+	for name, namespace in pairs(api.Namespaces) do
 		if table.HasValue(namespace.dependencies, dependent) then
-			api.namespaces[name] = nil
+			api.Namespaces[name] = nil
 			api.RemoveDependents(name)
 		end
 	end
@@ -170,6 +177,7 @@ function table.slice(values, i1, i2)
 	return res
 end
 
+-- Replaced because it adds the 'at' on the end...
 function table.concat(tab, at)
 	local s = ""
 	
@@ -180,6 +188,7 @@ function table.concat(tab, at)
 	return string.sub(s, 0, -string.len(at) - 1)
 end
 
+-- Replaced because it's ugly...
 function table.ToString(tab)
 	local s = ''
 	
@@ -239,7 +248,6 @@ function json_encode(data)
 			invehicle = data:InVehicle(),
 			vehicle = data:GetVehicle(),
 			isbot = data:IsBot(),
-			--frozen = data:Frozen(),
 			ping = data:Ping(),
 			steamid = data:SteamID(),
 			weapons = data:GetWeapons()

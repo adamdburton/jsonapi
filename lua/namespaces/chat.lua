@@ -1,12 +1,12 @@
-NS.dependencies = { 'core' }
+NS.Dependencies = { 'core' }
 
-NS.chats = {}
+NS.Chats = {}
 
-function NS.GetLatestChats(limit)
-	return api.namespaces['chat'].chats
+function NS:GetLatestChats(limit)
+	return self.chats
 end
 
-function NS.AddChat(player, text, public)
+function NS:AddChat(player, text, public)
 	hook.Call('PlayerSay', player, text, public)
 	-- TODO: Does this need sending to clients too?
 end

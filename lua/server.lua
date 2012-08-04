@@ -87,4 +87,4 @@ hook.Add('InitPostEntity', 'api.InitPostEntity', function()
 	local socket = GLSock(GLSOCK_TYPE_ACCEPTOR)
 	socket:Bind("", port, OnBind)
 end)
---]]
+]]--
