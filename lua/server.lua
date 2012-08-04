@@ -82,7 +82,9 @@ local function OnBind(sock, errno)
 	end
 end
 
+--[[ Don't bother for now until the binary modules are fixed
 hook.Add('InitPostEntity', 'api.InitPostEntity', function()
 	local socket = GLSock(GLSOCK_TYPE_ACCEPTOR)
 	socket:Bind("", port, OnBind)
 end)
+--]]
