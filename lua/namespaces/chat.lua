@@ -1,9 +1,7 @@
 NS.Dependencies = { 'core' }
 
-NS.Chats = {}
-
 function NS:GetLatestChats(limit)
-	return self.chats
+	return api.Data.ChatHistory
 end
 
 function NS:AddChat(player, text, public)
@@ -13,8 +11,10 @@ end
 
 --------------------------------------
 
+api.Data.ChatHistory = {}
+
 hook.Add('PlayerSay', 'JSONAPI.Chat.PlayerSay', function(ply, text, public)
 	local ply = api.Call('player', 'GetPlayer', { uniqueid = ply:UniqueID() }, true)
 	
-	table.insert(api.namespaces['chat'].chats, {player = ply, text = text, public = public, time = os.time()})
+	table.insert(api.Data.ChatHistory, {player = ply, text = text, public = public, time = os.time()})
 end)

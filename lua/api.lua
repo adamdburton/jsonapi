@@ -2,6 +2,7 @@ api = {}
 
 api.Namespaces = {}
 api.Hooks = {}
+api.Data = {}
 
 function api.LoadNamespaces()
 	-- Load namespaces
