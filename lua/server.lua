@@ -9,7 +9,10 @@ local authentication = {
 }
 
 local function CheckAuthentication(headerdata)
+	local headers = string.gmatch(headerdata, "(%w+): (%w+)")
+	
 	-- TODO: Implement this
+	
 	return true
 end
 

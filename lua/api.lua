@@ -18,7 +18,7 @@ function api.LoadNamespaces()
 	
 	-- Check dependencies and remove any namespaces with missing ones.
 	for name, namespace in pairs(api.Namespaces) do
-		for _, dependency in pairs(namespace.dependencies) do
+		for _, dependency in pairs(namespace.Dependencies) do
 			if not api.Namespaces[dependency] then
 				RemoveDependentNamespaces(name)
 				api.Namespaces[name] = nil
@@ -143,11 +143,11 @@ function get_args(f)
 end
 
 local function RemoveDependentNamespaces(dependent)
-	MsgN('JSONAPI: [info] Removing namespaces dependant on ' .. dependant.name)
+	MsgN('JSONAPI: [info] Removing namespaces dependent on ' .. dependent.name)
 	
 	-- Loop all namespaces and remove any namespace that depends on dependent, which in turn removes anything that depends on it, and so on.
 	for name, namespace in pairs(api.Namespaces) do
-		if table.HasValue(namespace.dependencies, dependent) then
+		if table.HasValue(namespace.Dependencies, dependent) then
 			api.Namespaces[name] = nil
 			api.RemoveDependents(name)
 		end
