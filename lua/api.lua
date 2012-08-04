@@ -181,7 +181,7 @@ function table.slice(values, i1, i2)
 	return res
 end
 
--- Replaced because it adds the 'at' on the end...
+-- Replaced because the default adds  the 'at' argument on the end, which isn't valid json...
 function table.concat(tab, at)
 	local s = ""
 	
@@ -203,7 +203,7 @@ function table.ToString(tab)
 	return '{ ' .. string.sub(s, 0, -3) .. ' }'
 end
 
--- Custom json encoding support! May not be the fastest but who cares, it's for an api.
+-- Custom json encoding support! May not be the fastest but who cares.
 function json_encode(data)
 	local function entity_data(ent)
 		return IsValid(ent) and {
@@ -273,3 +273,6 @@ function json_encode(data)
 		error("Unhandled type:" .. type(data) .. "\n", 0)
 	end
 end
+
+-- Here we go!
+api.LoadNamespaces()
