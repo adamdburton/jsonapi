@@ -2,11 +2,11 @@ NS.dependencies = { 'core' }
 
 NS.chats = {}
 
-function NS:GetLatestChats(limit)
+function NS.GetLatestChats(limit)
 	return table.slice(self.chats, #self.chats, -limit)
 end
 
-function NS:AddChat(player, text, public)
+function NS.AddChat(player, text, public)
 	hook.Call('PlayerSay', player, text, public)
 	-- TODO: Does this need sending to clients too?
 end

@@ -1,4 +1,4 @@
-function NS:GetPlayer(uniqueid)
+function NS.GetPlayer(uniqueid)
 	local ply = player.GetByUniqueID(uniqueid)
 	
 	if not ply then
@@ -8,7 +8,7 @@ function NS:GetPlayer(uniqueid)
 	return ply
 end
 
-function NS:GetPlayers()
+function NS.GetPlayers()
 	local t = {}
 	
 	for k, v in pairs(player.GetAll()) do

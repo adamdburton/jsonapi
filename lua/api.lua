@@ -12,7 +12,7 @@ function api.LoadNamespaces()
 		
 		include("namespaces/" .. filename)
 		
-		api.namespaces[string.gsub(filename, '.lua', '')] = namespace
+		api.namespaces[string.gsub(filename, '.lua', '')] = NS
 	end
 	
 	-- Check dependencies and remove any namespaces with missing ones.
@@ -43,7 +43,7 @@ function api.Call(namespace, method, call_args, plain)
 	end
 	
 	if not api.namespaces[namespace][method] then
-		return api.Error('Invalid method parameter (' .. method .. ').', plain)
+		return api.Error('Invalid method parameter (' .. method .. ') (' .. namespace .. ').', plain)
 	end
 	
 	local func = api.namespaces[namespace][method]
@@ -51,9 +51,9 @@ function api.Call(namespace, method, call_args, plain)
 	local function_args = get_args(func)
 	
 	-- Check the arguments table matches up with the function
-	for k, v in pairs(call_args) do
-		if not table.HasValue(function_args, k) then
-			return api.Error('Unexpected argument (' .. k .. ')', plain)
+	for k, v in pairs(function_args) do
+		if not call_args[v] then
+			return api.Error('Missing argument (' .. v .. ')', plain)
 		end
 	end
 	
@@ -64,15 +64,13 @@ function api.Call(namespace, method, call_args, plain)
 	
 	MsgN('JSONAPI: [info] Calling ' .. method .. ' in ' .. namespace .. ' with args: ' .. table.ToString(call_args))
 	
-	local unpack_args = {}
+	local pcall_args = {}
 	
-	table.insert(unpack_args, api.namespaces[namespace])
-	
-	for k, v in pairs(call_args) do
-		table.insert(unpack_args, v)
+	for _, param in pairs(function_args) do
+		table.insert(pcall_args, call_args[param])
 	end
 	
-	local status, ret = pcall(func, unpack(unpack_args))
+	local status, ret = pcall(func, unpack(pcall_args))
 	
 	if status then
 		-- Run hooks
@@ -80,6 +78,7 @@ function api.Call(namespace, method, call_args, plain)
 		
 		return api.Success(ret, plain)
 	else
+		MsgN('JSONAPI: [error] (' .. namespace .. '.' .. method .. ') ' .. ret)
 		return api.Error(ret, plain)
 	end
 end
@@ -108,7 +107,6 @@ function api.Success(data, plain)
 end
 
 function api.Error(message, plain)
-	--error('JSONAPI: [error] ' .. message, 0)
 	return not plain and json_encode({result = 'error', error = message}) or message
 end
 
@@ -182,8 +180,33 @@ function table.concat(tab, at)
 	return string.sub(s, 0, -string.len(at) - 1)
 end
 
+function table.ToString(tab)
+	local s = ''
+	
+	for k, v in pairs(tab) do
+		s = s .. tostring(k) .. ' = "' .. tostring(v) .. '", '
+	end
+	
+	return '{ ' .. string.sub(s, 0, -3) .. ' }'
+end
+
 -- Custom json encoding support!
 function json_encode(data)
+	local function entity_data(ent)
+		return IsValid(ent) and {
+			entindex = ent:EntIndex(),
+			position = ent:GetPos(),
+			angle = ent:GetAngles(),
+			class = ent:GetClass(),
+			color = ent:GetColor(),
+			model = ent:GetModel(),
+			material = ent:GetMaterial(),
+			skin = ent:GetSkin(),
+			isworld = ent:IsWorld(),
+			isonground = ent:IsOnGround()
+		} or false
+	end
+	
 	if type(data) == 'table' then
 		local t = {}
 		if table.IsSequential(data) then
@@ -202,50 +225,36 @@ function json_encode(data)
 		return '"' .. data .. '"'
 	elseif type(data) == 'Player' then
 		-- TODO: Encode player
-		return json_encode(tostring(data))
-		--[[
-		name = ply:Name(),
-		uniqueid = ply:UniqueID(),
-		alive = ply:Alive(),
-		health = ply:Health(),
-		armor = ply:Armor(),
-		deaths = ply:Deaths(),
-		couching = ply:Crouching(),
-		frags = ply:Frags(),
-		admin = ply:IsAdmin(),
-		superadmin = ply:IsSuperAdmin(),
-		vehicle = ply:InVehicle(),
-		bot = ply:IsBot(),
-		--frozen = ply:Frozen(),
-		ping = ply:Ping(),
-		steamid = ply:SteamID(),
-		position = tostring(ply:GetPos()),
-		angles = tostring(ply:GetAngles())
-		]]--
-	elseif type(data) == 'vehicle' then
-		-- TODO: Encode vehicle
-		return json_encode('Vehicle [' .. data:GetClass() .. ']')
+		return json_encode(table.Merge(entity_data(data), {
+			name = data:Name(),
+			uniqueid = data:UniqueID(),
+			alive = data:Alive(),
+			health = data:Health(),
+			armor = data:Armor(),
+			deaths = data:Deaths(),
+			couching = data:Crouching(),
+			frags = data:Frags(),
+			isadmin = data:IsAdmin(),
+			issuperadmin = data:IsSuperAdmin(),
+			invehicle = data:InVehicle(),
+			vehicle = data:GetVehicle(),
+			isbot = data:IsBot(),
+			--frozen = data:Frozen(),
+			ping = data:Ping(),
+			steamid = data:SteamID(),
+			weapons = data:GetWeapons()
+		}))
 	elseif type(data) == 'Vector' then
 		return json_encode({x = data.x, y = data.y, z = data.z})
-	elseif type(data) == 'Entity' then
-		-- TODO: Encode entity
-		return json_encode({
-			entindex = data:EntIndex(),
-			position = data:GetPos(),
-			angle = data:GetAngles(),
-			class = data:GetClass(),
-			color = data:GetColor(),
-			model = data:GetModel(),
-			material = data:GetMaterial(),
-			skin = data:GetSkin(),
-			world = data:IsWorld(),
-			onground = data:IsOnGround()
-		})
+	elseif type(data) == 'Entity' or type(data) == 'Vehicle' then
+		return json_encode(entity_data(data))
 	elseif type(data) == 'Angle' then
 		return json_encode({p = data.p, y = data.y, r = data.r})
 	elseif type(data) == 'Weapon' then
-		-- TODO: Encode weapon
-		return json_encode(tostring(data))
+		return json_encode(table.Merge(entity_data(data), {
+			clip1 = data:Clip1(),
+			clip2 = data:Clip2()
+		}))
 	elseif type(data) == 'boolean' then
 		return data == true and 'true' or 'false'
 	else

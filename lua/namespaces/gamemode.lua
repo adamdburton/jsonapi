@@ -1,8 +1,8 @@
-function NS:GetGamemodes()
+function NS.GetGamemodes()
 	return GetGamemodes()
 end
 
-function NS:ChangeGamemode(gamemode)
+function NS.ChangeGamemode(gamemode)
 	if not table.HasValue(GetGamemodes(), gamemode) then
 		error('Gamemode doesn\t exist.', 0)
 	end
