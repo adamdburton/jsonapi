@@ -1,9 +1,9 @@
-function NS:FileExists(filename)
+function NS:Exists(filename)
 	local f = file.Open(filename, "r", "GAME")
 	return f
 end
 
-function NS:ReadFile(filename)
+function NS:Read(filename)
 	local f = file.Open(filename, "r", "GAME")
 	
 	if (!f) then error('File doesn\'t exist.', 0) end
@@ -14,20 +14,24 @@ function NS:ReadFile(filename)
 	return str
 end
 
-function NS:WriteFile(filename, content)
-	local f = file.Open(filename, "w", "GAME")
+function NS:Write(filename, content)
+	local f = file.Open(filename, "w", "DATA")
 	
 	if (!f) then error('Couldn\'t open file for writing.', 0) end
 	
 	f:Write(content)
 	f:Close()
+	
+	return true
 end
 
-function NS:AppendFile(filename, content)
+function NS:Append(filename, content)
 	local f = file.Open(filename, "a", "GAME")
 	
 	if (!f) then error('Couldn\'t open file for appending.', 0) end
 	
 	f:Write(content)
 	f:Close()
+	
+	return true
 end

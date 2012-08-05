@@ -1,5 +1,5 @@
-function NS:GetGamemodes()
-	return GetGamemodes()
+function NS:GetGamemode()
+	return gmod.GetGamemode()
 end
 
 function NS:ChangeGamemode(gamemode)

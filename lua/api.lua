@@ -71,7 +71,7 @@ function api.Call(namespace, method, call_args, plain)
 		return api.Error('Incorrect number of parameters to ' .. namespace .. '.' .. method .. ' (expecting ' .. #function_args .. ', got ' .. table.Count(call_args) .. ').', plain)
 	end
 	
-	MsgN('JSONAPI: [info] Calling ' .. method .. ' in ' .. namespace .. ' with args: ' .. table.ToString(call_args))
+	MsgN('JSONAPI: [info] Calling ' .. namespace .. '.' .. method .. ' with args: ' .. table.ToString(call_args))
 	
 	local pcall_args = {}
 	
@@ -249,12 +249,18 @@ function json_encode(data)
 			frags = data:Frags(),
 			isadmin = data:IsAdmin(),
 			issuperadmin = data:IsSuperAdmin(),
+			isfroze = data:IsFrozen(),
+			--isspeaking = data:IsSpeaking(),
 			invehicle = data:InVehicle(),
 			vehicle = data:GetVehicle(),
 			isbot = data:IsBot(),
 			ping = data:Ping(),
 			steamid = data:SteamID(),
-			weapons = data:GetWeapons()
+			steamid64 = data:SteamID64(),
+			weapons = data:GetWeapons(),
+			team = team.GetName(data:Team()),
+			os = data.OS,
+			country = data.Country
 		}))
 	elseif type(data) == 'Vector' then
 		return json_encode({x = data.x, y = data.y, z = data.z})
