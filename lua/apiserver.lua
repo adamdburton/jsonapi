@@ -16,7 +16,7 @@ local function CheckAuthentication(headerdata)
 	return true
 end
 
-local function ParseHeaders(headerdata)
+local function ParseRequest(headerdata)
 	local lines = string.Split(headerdata, "\r\n")
 	
 	local http_method = string.gmatch(lines[1], "(%w+)=(%w+)")

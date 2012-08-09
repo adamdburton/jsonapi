@@ -7,5 +7,5 @@ function NS:ChangeGamemode(gamemode)
 		error('Gamemode doesn\t exist.', 0)
 	end
 	
-	RunConsoleCommand('changegamemode', game.GetMap(), gamemode)
+	RunConsoleCommand('gamemode', gamemode)
 end
