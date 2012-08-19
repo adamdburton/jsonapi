@@ -255,6 +255,7 @@ function json_encode(data)
 			vehicle = data:GetVehicle(),
 			isbot = data:IsBot(),
 			ping = data:Ping(),
+			ipaddress = data:IPAddress(),
 			steamid = data:SteamID(),
 			steamid64 = data:SteamID64(),
 			weapons = data:GetWeapons(),

@@ -1,8 +1,8 @@
-function NS:GetCurrentMap()
+function NS:GetCurrent()
 	return game.GetMap()
 end
 
-function NS:GetNextMap()
+function NS:GetNext()
 	return game.GetMapNext()
 end
 
