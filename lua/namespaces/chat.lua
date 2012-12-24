@@ -4,9 +4,8 @@ function NS:GetLatest(limit)
 	return api.Data.ChatHistory
 end
 
-function NS:Add(player, text, team, dead)
-	hook.Call('PlayerSay', player, text, team, dead)
-	-- TODO: Does this need sending to clients too?
+function NS:Add(text)
+	RunConsoleCommand('say', text)
 end
 
 --------------------------------------

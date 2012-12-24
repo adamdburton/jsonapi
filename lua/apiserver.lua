@@ -1,4 +1,4 @@
-require('glsock')
+require('glsock2')
 
 local port = 6678
 
@@ -19,75 +19,90 @@ end
 local function ParseRequest(headerdata)
 	local lines = string.Split(headerdata, "\r\n")
 	
-	local http_method = string.gmatch(lines[1], "(%w+)=(%w+)")
+	local uri_string = table.remove(lines, 1)
+	local uri_params = {}
 	
-	local namespace = http_method.namespace
-	local method = http_method.method
+	for k, v in string.gmatch(uri_string, "(%w+)=(%w+)") do
+		uri_params[k] = v
+	end
 	
-	http_method.namespace = nil
-	http_method.method = nil
-		
-	return { namespace = namespace, method = method, args = http_method }
+	local headers = {}
+	
+	for _, line in pairs(lines) do
+		-- parse the other headers
+	end
+	
+	local namespace = uri_params.namespace
+	local method = uri_params.method
+	
+	uri_params.namespace = nil
+	uri_params.method = nil
+	
+	return { namespace = namespace, method = method, args = uri_params }, headers
 end
 
-local function OnReadHeader(sock, data, errno)
+local function OnReadHeader(sock, data, errno)	
 	if errno == GLSOCK_ERROR_SUCCESS then
 		local read, headerdata = data:Read(data:Size())
 		
-		local params = ParseRequest(headerdata)
+		local params, headers = ParseRequest(headerdata)
 		
 		local buffer = GLSockBuffer()
 		buffer:Write("HTTP/1.1 200 OK\r\n")
 		buffer:Write("Connection: close\r\n")
 		buffer:Write("Server: JSONAPI\r\n")
 		buffer:Write("Content-Type: application/json\r\n")
-		buffer:Write("\r\n")
+		
+		local result
 		
 		if(CheckAuthentication(headerdata)) then
-			buffer:Write(api.Call(params.namespace, params.method, params.args))
+			result = api.Call(params.namespace, params.method, params.args) or ""
 		else
-			buffer:Write(api.Error('Authentication failed.'))
+			result = api.Error('Authentication failed.')
 		end
+		
+		buffer:Write("Content-Length: " .. string.len(result) .. "\r\n")
+		buffer:Write("\r\n")
+		
+		buffer:Write(result)
 		
 		sock:Send(buffer, function() end)
 	else
-		MsgN('JSON API: [error] Failed to read headerdata (' .. errno .. ')')
+		MsgN('JSON API SERVER: [error] Failed to read headerdata (' .. errno .. ')')
 	end
 end
 
 local function OnAccept(sock, client, errno)
 	if errno == GLSOCK_ERROR_SUCCESS then
-		MsgN('JSON API: [info] New connection from ' .. tostring(client))
+		MsgN('JSON API SERVER: [info] New connection from ' .. tostring(client))
 		
-		client:ReadUntil("\r\n\r\n", OnReadHeader)
+		client:Read(100, OnReadHeader)
 		
 		sock:Accept(OnAccept)
 	else
-		MsgN('JSON API: [error] Failed to accept (' .. errno .. ')')
+		MsgN('JSON API SERVER: [error] Failed to accept (' .. errno .. ')')
 	end
 end
 
 local function OnListen(sock, errno)
 	if errno == GLSOCK_ERROR_SUCCESS then
-		MsgN('JSON API: [info] Listening on port ' .. port)
+		MsgN('JSON API SERVER: [info] Listening on port ' .. port)
 		sock:Accept(OnAccept)
 	else
-		MsgN('JSON API: [error] Failed to listen on port ' .. port .. ' (' .. errno .. ')')
+		MsgN('JSON API SERVER: [error] Failed to listen on port ' .. port .. ' (' .. errno .. ')')
 	end
 end
 
 local function OnBind(sock, errno)
 	if errno == GLSOCK_ERROR_SUCCESS then
-		MsgN('JSON API: [info] Bound to port ' .. port)
+		MsgN('JSON API SERVER: [info] Bound to port ' .. port)
 		sock:Listen(10, OnListen)
 	else
-		MsgN('JSON API: [error] Failed to bind to port ' .. port .. ' (' .. errno .. ')')
+		MsgN('JSON API SERVER: [error] Failed to bind to port ' .. port .. ' (' .. errno .. ')')
 	end
 end
 
---[[ Don't bother for now until the binary modules are fixed
 hook.Add('InitPostEntity', 'api.InitPostEntity', function()
 	local socket = GLSock(GLSOCK_TYPE_ACCEPTOR)
 	socket:Bind("", port, OnBind)
 end)
-]]--

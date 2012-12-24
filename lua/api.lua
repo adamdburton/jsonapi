@@ -6,7 +6,9 @@ api.Data = {}
 
 function api.LoadNamespaces()
 	-- Load namespaces
-	for _, filename in pairs(file.Find("namespaces/*.lua", LUA_PATH)) do
+	local f, d = file.Find("namespaces/*.lua", 'LUA')
+	
+	for _, filename in pairs(f) do
 		NS = {}
 		NS.__index = NS
 		NS.Name = string.gsub(filename, '.lua', '')
@@ -50,6 +52,10 @@ function api.Call(namespace, method, call_args, plain)
 	
 	local func = api.Namespaces[namespace][method]
 	
+	if not func then
+		return api.Error('Invalid function (' .. method .. ') (' .. namespace .. ').', plain)
+	end
+	
 	local function_args = get_args(func)
 	
 	-- remove the self arg, we pass that anyway
@@ -71,7 +77,7 @@ function api.Call(namespace, method, call_args, plain)
 		return api.Error('Incorrect number of parameters to ' .. namespace .. '.' .. method .. ' (expecting ' .. #function_args .. ', got ' .. table.Count(call_args) .. ').', plain)
 	end
 	
-	MsgN('JSONAPI: [info] Calling ' .. namespace .. '.' .. method .. ' with args: ' .. table.ToString(call_args))
+	MsgN('JSON API: [info] Calling ' .. namespace .. '.' .. method .. ' with args: ' .. table.ToString(call_args))
 	
 	local pcall_args = {}
 	
@@ -87,7 +93,7 @@ function api.Call(namespace, method, call_args, plain)
 		
 		return api.Success(ret, plain)
 	else
-		MsgN('JSONAPI: [error] (' .. namespace .. '.' .. method .. ') ' .. ret)
+		MsgN('JSON API: [error] (' .. namespace .. '.' .. method .. ') ' .. ret)
 		return api.Error(ret, plain)
 	end
 end
@@ -121,33 +127,22 @@ end
 
 ---------------------------------------------------------------
 
--- Thanks and credit to deco for get_args
+-- Thanks and credit to deco for get_args/debug.getparamnames - http://www.facepunch.com/showthread.php?t=884409
 
-function get_args(f)
-	local co = coroutine.create(f)
-	local params = {}
-	debug.sethook(co, function()
-		local i, k = 1, debug.getlocal(co, 2, 1)
-		while k do
-			if k ~= "(*temporary)" then
-				table.insert(params, k)
-			end
-			i = i+1
-			k = debug.getlocal(co, 2, i)
-		end
-		error("~~end~~")
-	end, "c")
-	local res, err = coroutine.resume(co)
-	if res then
-		error("The function provided defies the laws of the universe.", 2)
-	elseif string.sub(tostring(err), -7) ~= "~~end~~" then
-		error("The function failed with the error: "..tostring(err), 2)
+function get_args(func)
+	local func_paramInfoDict = debug.getinfo(func, 'u')
+	local func_paramCount = func_paramInfoDict.nparams
+	local func_isVarArg = func_paramInfoDict.isvararg
+	local paramNameList = {}
+	for i = 1, func_paramCount do
+		local param_name, param_value = debug.getlocal(func, i)
+		paramNameList[i] = param_name
 	end
-	return params
+	return paramNameList, func_isVarArg
 end
 
 local function RemoveDependentNamespaces(dependent)
-	MsgN('JSONAPI: [info] Removing namespaces dependent on ' .. dependent.name)
+	MsgN('JSON API: [info] Removing namespaces dependent on ' .. dependent.name)
 	
 	-- Loop all namespaces and remove any namespace that depends on dependent, which in turn removes anything that depends on it, and so on.
 	for name, namespace in pairs(api.Namespaces) do
@@ -259,6 +254,7 @@ function json_encode(data)
 			steamid = data:SteamID(),
 			steamid64 = data:SteamID64(),
 			weapons = data:GetWeapons(),
+			activeweapon = data:GetActiveWeapon():GetClass(),
 			team = team.GetName(data:Team()),
 			os = data.OS,
 			country = data.Country
